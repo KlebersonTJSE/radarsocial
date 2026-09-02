@@ -1,32 +1,21 @@
----
-title: "RadarSocial"
-output: github_document
----
+<img src="img/radarsocial_logo_fundo_escuro.png" width="250r">
+
+### Análise Inteligente de Eventos, Rejeições e Totalizadores do eSocial.
 
 # 📡 RadarSocial
 
-### Transformando dados do eSocial em informação confiável.
 
-https://img.shields.io/badge/License-MIT-green.svg](LICENSE)
-https://img.shields.io/badge/R-%3E%3D4.3-blue](https://www.r-project.org/)
-https://img.shields.io/badge/Shiny-Web%20App-lightblue](https://shiny.posit.co/)
-https://img.shields.io/badge/Status-Em%20Desenvolvimento-yellow]()
-https://img.shields.io/github/last-commit/SEU-USUARIO/RadarSocial](https://github.com/SEU-USUARIO/RadarSocial)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSEg.shields.io/badge/R-%.3-blue](https://www.r-project.org/)
 
-<br>
+[![Shiny](https://img.shields.io/badge/Shiny-Web%20App-lightblue)](https://shiny.[![Status](https://img.shields.io/badge/Status-Emvimento-yellow]()
 
-<p align="center">
-  img/logo_radarsocial.png
-</p>
-
-<p align="center">
-<b>Análise Inteligente de Eventos, Rejeições e Totalizadores do eSocial</b>
-</p>
+[![Last Commit](https://img.shields.io/github/last-commit/KlebersonTJSE/RadarSocial)](https://github.com/KlebersonTJSE/Fp align="center">
 
 ---
 
 # 📖 Sobre o Projeto
 
+<div style="text-align: justify;">
 O **RadarSocial** é uma aplicação desenvolvida para apoiar organizações públicas e privadas no monitoramento da qualidade das informações transmitidas ao **eSocial**.
 
 A ferramenta permite a análise de eventos inconsistentes, rejeitados e processados pelo ambiente nacional do eSocial, oferecendo uma visão consolidada dos problemas identificados e dos respectivos impactos sobre os totalizadores oficiais.
@@ -41,6 +30,7 @@ Além da análise de eventos, o RadarSocial disponibiliza recursos específicos 
 - S-5013
 
 Seu objetivo é transformar informações técnicas e dispersas em conhecimento de fácil compreensão para gestores, equipes de RH, departamentos de pessoal, contabilidade e governança corporativa.
+</div>
 
 ---
 
@@ -76,7 +66,7 @@ Seu objetivo é transformar informações técnicas e dispersas em conhecimento 
 
 # 📊 Totalizadores Monitorados
 
-O RadarSocial oferece recursos específicos para análise dos seguintes totalizadores:
+O **RadarSocial** oferece recursos específicos para análise dos seguintes totalizadores:
 
 | Evento | Descrição |
 |----------|------------|
@@ -86,6 +76,16 @@ O RadarSocial oferece recursos específicos para análise dos seguintes totaliza
 | S-5011 | Consolidação das contribuições sociais |
 | S-5012 | Imposto de Renda consolidado |
 | S-5013 | FGTS consolidado |
+
+---
+
+# 📊 Inconsistentes e Rejeitados
+
+<div style="text-align: justify;">
+O **RadarSocial** facilita a leitura, interpretação e tratamento dos eventos inconsistentes e rejeitados do eSocial, convertendo retornos técnicos em informações gerenciais de fácil entendimento. 
+
+Por meio de mecanismos de classificação, consolidação e análise das ocorrências, a ferramenta permite identificar causas, impactos e prioridades de correção, apoiando a tomada de decisão e promovendo maior qualidade, integridade e conformidade das informações transmitidas ao ambiente nacional do eSocial.
+</div>
 
 ---
 
@@ -212,7 +212,9 @@ shiny::runApp()
 
 # 🏛 Governança e Conformidade
 
-O RadarSocial foi concebido para fortalecer os processos de controle, auditoria e governança relacionados às obrigações trabalhistas, previdenciárias e tributárias transmitidas ao eSocial.
+<div style="text-align: justify;">
+O **RadarSocial** foi concebido para fortalecer os processos de controle, auditoria e governança relacionados às obrigações trabalhistas, previdenciárias e tributárias transmitidas ao **eSocial**.
+</div>
 
 A solução contribui para:
 
@@ -253,6 +255,7 @@ https://img.shields.io/badge/LinkedIn-Perfil-blue?logo=linkedin](https://www.lin
 
 ## Licença MIT
 
+<div style="text-align: justify;">
 Copyright (c) 2026 Kleberson Carlos Pinto e Edison Carvalho
 
 É concedida permissão, gratuitamente, a qualquer pessoa que obtenha uma cópia deste software e dos arquivos de documentação associados ("Software"), para utilizar o Software sem restrição, incluindo, sem limitação, os direitos de usar, copiar, modificar, mesclar, publicar, distribuir, sublicenciar e/ou vender cópias do Software, e permitir que as pessoas a quem o Software seja fornecido façam o mesmo, sujeito às seguintes condições:
@@ -260,14 +263,16 @@ Copyright (c) 2026 Kleberson Carlos Pinto e Edison Carvalho
 O aviso de copyright acima e esta permissão deverão ser incluídos em todas as cópias ou partes substanciais do Software.
 
 O SOFTWARE É FORNECIDO "NO ESTADO EM QUE SE ENCONTRA", SEM GARANTIA DE QUALQUER NATUREZA, EXPRESSA OU IMPLÍCITA, INCLUINDO, MAS NÃO SE LIMITANDO ÀS GARANTIAS DE COMERCIALIZAÇÃO, ADEQUAÇÃO A UM DETERMINADO PROPÓSITO E NÃO VIOLAÇÃO. EM NENHUMA HIPÓTESE OS AUTORES OU DETENTORES DOS DIREITOS AUTORAIS SERÃO RESPONSÁVEIS POR QUALQUER RECLAMAÇÃO, DANO OU OUTRA RESPONSABILIDADE, SEJA EM AÇÃO CONTRATUAL, ILÍCITO CIVIL OU OUTRA FORMA, DECORRENTE DE, OU EM CONEXÃO COM O SOFTWARE OU O USO OU OUTRAS NEGOCIAÇÕES NO SOFTWARE.
-
+</div>
 ---
 
 # 📚 Justificativa da Licença MIT
 
-O RadarSocial adota a Licença MIT por entender que soluções voltadas à melhoria da qualidade das informações transmitidas ao eSocial devem incentivar a colaboração, a transparência e o compartilhamento de conhecimento entre organizações públicas e privadas.
+<div style="text-align: justify;">
+O **RadarSocial** adota a Licença MIT por entender que soluções voltadas à melhoria da qualidade das informações transmitidas ao eSocial devem incentivar a colaboração, a transparência e o compartilhamento de conhecimento entre organizações públicas e privadas.
 
 A utilização dessa licença permite que órgãos governamentais, empresas e instituições adaptem e ampliem a ferramenta conforme suas necessidades específicas, preservando o reconhecimento dos autores e fomentando a evolução contínua da solução.
+</div>
 
 A escolha da Licença MIT está alinhada aos princípios de:
 
