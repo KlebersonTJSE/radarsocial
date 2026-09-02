@@ -225,17 +225,21 @@ A solução contribui para:
 
 ---
 
-# 👨‍💻 Desenvolvedores
+## 👨‍💻 Desenvolvedores
 
-## Kleberson Carlos Pinto
+### Edison Carvalho
+
+**Técnico Judiciário - Programação de Sistemas**  
+Tribunal de Justiça do Estado de Sergipe (TJSE)
+
+https://img.shields.io/badge/LinkedIn-Perfil-blue?logo=linkedin](https://www.linkedin.com/in/SEU-LINK-AQUI)
+
+### Kleberson Carlos Pinto
 
 **Técnico Judiciário - Programação de Sistemas**  
 Tribunal de Justiça do Estado de Sergipe (TJSE)
 
-## Edison Carvalho
-
-**Técnico Judiciário - Programação de Sistemas**  
-Tribunal de Justiça do Estado de Sergipe (TJSE)
+https://img.shields.io/badge/LinkedIn-Perfil-blue?logo=linkedin](https://www.linkedin.com/in/kleberson-pinto-91010a345)
 
 ---
 
