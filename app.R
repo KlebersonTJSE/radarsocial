@@ -12,7 +12,7 @@ library(jsonlite)
 # =====================================================
 
 readRenviron(
-  "C:/Users/3894/radarsocial/conf/.Renviron"
+  "C:/Users/3894/OneDrive - Tribunal de Justiça do Estado de Sergipe/Documentos/GitHub/radarsocial/conf/.Renviron"
 )
 
 # =====================================================

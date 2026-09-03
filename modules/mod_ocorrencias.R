@@ -238,26 +238,11 @@ carregar_ocorrencias <- function() {
 # =====================================================
 
 mod_ocorrencias_ui <- function(id) {
-  
   ns <- NS(id)
-  
-  fluidPage(
-    
-    titlePanel(
-      
-      "Consolidação de Ocorrências eSocial"
-      
-    ),
-    
-    sidebarLayout(
-      
-      sidebarPanel(
-        
-        actionButton(
-          
-          ns("atualizar"),
-          
-          "Atualizar Dados",
+  fluidPage(titlePanel("Consolidação - Inconsistencias"),
+            sidebarLayout(
+            sidebarPanel(
+            actionButton(ns("atualizar"),"Atualizar Dados",
           
           class =
             "btn btn-secondary"

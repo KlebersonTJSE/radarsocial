@@ -84,14 +84,14 @@ processar_rejeitado <- function(arquivo){
 
 mod_rejeitados_ui <- function(id) {
   ns <- NS(id)
-  fluidPage(titlePanel("Eventos Rejeitados"),
+  fluidPage(titlePanel("Consolidado - Eventos Rejeitados"),
             sidebarLayout(
               sidebarPanel(
                 actionButton(ns("atualizar"), "Atualizar Dados"),
                 br(),
                 br(),
                 tags$hr(),
-                h4("Enviar Arquivos Rejeitados"),
+                h4("Enviar Arquivos"),
                 actionButton(
                   ns("apagar_pasta"),
                   "Apagar Arquivos da Pasta",
