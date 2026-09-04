@@ -6,6 +6,18 @@ library(shiny)
 library(bslib)
 library(DT)
 library(jsonlite)
+library(digest)
+
+library(DBI)
+library(RSQLite)
+
+# =====================================================
+# CARREGA CONEXAO DB PARA LOGIN COM AUTH
+# =====================================================
+con <- dbConnect(
+  SQLite(),
+  "data/radarsocial.db"
+)
 
 # =====================================================
 # CARREGA VARIÁVEIS DE AMBIENTE
@@ -21,43 +33,158 @@ readRenviron(
 
 source("R/utils.R")
 source("R/auth.R")
+source("R/auth_totp.R")
 source("R/database.R")
 
 source("modules/mod_usuario.R")
 source("modules/mod_rejeitados.R")
 source("modules/mod_ocorrencias.R")
 source("modules/mod_totalizadores.R")
-# source("modules/mod_consulta_sql.R")
-# source("modules/mod_declaracao.R")
-# source("modules/mod_alertas.R")
+source("modules/mod_totp_admin.R")
+
+# =====================================================
+# RECURSOS ESTÁTICOS
+# =====================================================
+
+addResourcePath("img", "img")
 
 # =====================================================
 # UI
 # =====================================================
 
 ui <- fluidPage(
-
+  
   theme = bs_theme(
     version = 5,
     bootswatch = "flatly"
   ),
-
+  
   tags$head(
-
+    
     tags$style(HTML("
 
       body {
         background: #f4f6f9;
       }
 
-      .login {
-        width: 420px;
-        margin: auto;
-        margin-top: 120px;
-        background: white;
-        padding: 40px;
-        border-radius: 20px;
-        box-shadow: 0 3px 20px rgba(0,0,0,.15);
+      /* =============================================
+         LOGIN - CARD ENTERPRISE
+         ============================================= */
+
+      .login-wrapper {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 40px 20px;
+      }
+
+      .login-card {
+        width: 100%;
+        max-width: 460px;
+        background: #fff;
+        border: 1px solid rgba(0,0,0,.05);
+        border-radius: 1rem;
+      }
+
+      .login-icon-badge {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        margin: 0 auto;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, #003366, #0d6efd);
+        color: #fff;
+        font-size: 1.4rem;
+        box-shadow: 0 .4rem 1rem rgba(13,110,253,.25);
+      }
+
+      .login-title {
+        text-align: center;
+        letter-spacing: -.01em;
+      }
+
+      .login-subtitle {
+        text-align: center;
+        font-size: .9rem;
+      }
+
+      /* Cartões de método de acesso (radioButtons estilizado) */
+
+      .metodo-opcoes .radio {
+        margin-bottom: .85rem;
+      }
+
+      .metodo-opcoes .radio label {
+        display: flex;
+        align-items: flex-start;
+        gap: .85rem;
+        width: 100%;
+        margin: 0;
+        border: 1.5px solid #e2e6ea;
+        border-radius: .85rem;
+        padding: 1rem 1.1rem;
+        cursor: pointer;
+        transition: border-color .15s ease,
+                    background-color .15s ease,
+                    box-shadow .15s ease,
+                    transform .1s ease;
+      }
+
+      .metodo-opcoes .radio label:hover {
+        border-color: #8fb8ff;
+        background: #f5f9ff;
+        box-shadow: 0 .25rem .75rem rgba(13,110,253,.08);
+        transform: translateY(-1px);
+      }
+
+      .metodo-opcoes .radio input[type=radio] {
+        margin-top: .3rem;
+        accent-color: #0d6efd;
+        width: 1.05rem;
+        height: 1.05rem;
+        flex-shrink: 0;
+      }
+
+      .metodo-opcoes .radio:has(input:checked) label {
+        border-color: #0d6efd;
+        background: #eef4ff;
+        box-shadow: 0 .3rem .9rem rgba(13,110,253,.15);
+      }
+
+      .metodo-opcao-icone {
+        color: #0d6efd;
+        font-size: 1.15rem;
+        margin-top: .1rem;
+      }
+
+      .metodo-opcao-titulo {
+        font-weight: 600;
+        color: #212529;
+      }
+
+      .metodo-opcao-desc {
+        font-weight: 400;
+        font-size: .8rem;
+        color: #6c757d;
+      }
+
+      .btn-acesso {
+        height: 48px;
+        font-weight: 600;
+        font-size: 1rem;
+        border-radius: .6rem;
+      }
+
+      .voltar-link {
+        font-size: .85rem;
+        color: #6c757d !important;
+      }
+
+      .voltar-link:hover {
+        color: #0d6efd !important;
       }
 
       .logo {
@@ -66,6 +193,15 @@ ui <- fluidPage(
         font-weight: bold;
         color: #003366;
         margin-bottom: 25px;
+      }
+
+      .logo-login {
+        display: block;
+        width: 100%;
+        max-width: 320px;
+        height: auto;
+        margin: 0 auto 30px auto;
+        filter: drop-shadow(0 3px 8px rgba(0,0,0,.10));
       }
 
       .foto {
@@ -162,11 +298,11 @@ ui <- fluidPage(
       }
 
     ")),
-
+    
     # =================================================
     # AVISO DE CAPS LOCK
     # =================================================
-
+    
     tags$script(HTML("
 
       $(document).on(
@@ -216,11 +352,11 @@ ui <- fluidPage(
       );
 
     ")),
-
+    
     # =================================================
     # TOGGLE DO CABEÇALHO (client-side, preserva estado dos módulos)
     # =================================================
-
+    
     tags$script(HTML("
 
       Shiny.addCustomMessageHandler(
@@ -255,21 +391,21 @@ ui <- fluidPage(
       );
 
     "))
-
+    
   ),
-
+  
   # ===================================================
   # LOGIN
   # ===================================================
-
+  
   uiOutput("tela_login"),
-
+  
   # ===================================================
   # SISTEMA PRINCIPAL
   # ===================================================
-
+  
   uiOutput("tela_principal")
-
+  
 )
 
 # =====================================================
@@ -277,72 +413,118 @@ ui <- fluidPage(
 # =====================================================
 
 server <- function(input, output, session) {
-
+  
   # ===================================================
   # ESTADO DA SESSÃO
   # ===================================================
-
+  
   autenticado <- reactiveVal(FALSE)
-
   usuarioLogado <- reactiveVal(NULL)
-
   dadosUsuario <- reactiveVal(NULL)
-
   fotoUsuario <- reactiveVal(NULL)
-
+  
+  # Método escolhido na tela de seleção ("ad" | "totp" | NULL = seletor)
+  metodoAcesso <- reactiveVal(NULL)
+  
+  # Método efetivamente usado no login bem-sucedido ("AD" | "TOTP")
+  metodoAutenticado <- reactiveVal(NULL)
+  
   # ===================================================
   # ESTADO DO CABEÇALHO
   # ===================================================
-
+  
   header_oculto <- reactiveVal(FALSE)
-
+  
   # ===================================================
   # MÓDULO SELECIONADO
   # ===================================================
-
+  
   menuSelecionado <- reactiveVal("Usuário")
-
+  
   # ===================================================
-  # LOGIN
+  # SELEÇÃO DO MÉTODO DE ACESSO
   # ===================================================
-
+  
   observeEvent(
-
-    input$entrar,
-
+    
+    input$continuar,
+    
     {
-
+      
+      req(input$metodo_acesso)
+      
+      metodoAcesso(input$metodo_acesso)
+      
+    },
+    
+    ignoreInit = TRUE
+    
+  )
+  
+  observeEvent(
+    
+    input$voltar_metodo,
+    
+    {
+      
+      metodoAcesso(NULL)
+      
+    },
+    
+    ignoreInit = TRUE
+    
+  )
+  
+  # ===================================================
+  # LOGIN - AD
+  # ===================================================
+  
+  observeEvent(
+    
+    input$entrar,
+    
+    {
+      
       req(
         input$usuario,
         input$senha
       )
-
+      
       dados <- authenticate_ad(
         input$usuario,
         input$senha
       )
-
+      
+      registrar_auditoria(
+        con,
+        input$usuario,
+        "AD",
+        !is.null(dados)
+      )
+      
       if (!is.null(dados)) {
-
+        
         autenticado(TRUE)
-
+        
         usuarioLogado(input$usuario)
-
+        
         dadosUsuario(dados)
-
+        
         fotoUsuario(
           obter_foto_usuario(dados)
         )
-
+        
+        metodoAutenticado("AD")
+        
         menuSelecionado("Usuário")
-
+        
         # Garante que a aba volte para "Usuário" sem recriar a UI toda
         updateTabsetPanel(
           session,
           "menu",
           selected = "Usuário"
         )
-
+        
         showNotification(
           paste(
             "Bem-vindo",
@@ -350,285 +532,499 @@ server <- function(input, output, session) {
           ),
           type = "message"
         )
-
+        
       } else {
-
+        
         showNotification(
           "Usuário ou senha inválidos",
           type = "error"
         )
-
+        
       }
-
+      
     },
-
+    
     ignoreInit = TRUE
-
+    
   )
-
+  
+  # ===================================================
+  # LOGIN - TOTP (Authenticator)
+  # ===================================================
+  
+  observeEvent(
+    
+    input$entrar_totp,
+    
+    {
+      
+      req(
+        input$usuario_totp,
+        input$codigo_totp
+      )
+      
+      dados <- autenticar_totp(
+        con,
+        input$usuario_totp,
+        input$codigo_totp
+      )
+      
+      if (!is.null(dados)) {
+        
+        autenticado(TRUE)
+        
+        usuarioLogado(dados$login)
+        
+        dadosUsuario(dados)
+        
+        fotoUsuario(NULL)
+        
+        metodoAutenticado("TOTP")
+        
+        menuSelecionado("Usuário")
+        
+        updateTabsetPanel(
+          session,
+          "menu",
+          selected = "Usuário"
+        )
+        
+        showNotification(
+          paste(
+            "Bem-vindo",
+            dados$displayName
+          ),
+          type = "message"
+        )
+        
+      } else {
+        
+        showNotification(
+          "Usuário ou código inválido",
+          type = "error"
+        )
+        
+      }
+      
+    },
+    
+    ignoreInit = TRUE
+    
+  )
+  
   # ===================================================
   # LOGOUT
   # ===================================================
-
+  
   observeEvent(
-
+    
     input$sair,
-
+    
     {
-
+      
       autenticado(FALSE)
-
       usuarioLogado(NULL)
-
       dadosUsuario(NULL)
-
       fotoUsuario(NULL)
-
+      metodoAutenticado(NULL)
+      metodoAcesso(NULL)
       menuSelecionado("Usuário")
-
+      
     },
-
+    
     ignoreInit = TRUE
-
+    
   )
-
+  
   # ===================================================
   # ALTERNÂNCIA DO CABEÇALHO (client-side, não recria a UI)
   # ===================================================
-
+  
   observeEvent(
-
+    
     input$toggle_header,
-
+    
     {
-
+      
       header_oculto(!header_oculto())
-
+      
       session$sendCustomMessage(
         "toggle-header",
         list(oculto = header_oculto())
       )
-
+      
     },
-
+    
     ignoreInit = TRUE
-
+    
   )
-
+  
   # ===================================================
   # CAPTURA DA ABA SELECIONADA
   # ===================================================
-
+  
   observeEvent(
-
+    
     input$menu,
-
+    
     {
-
+      
       req(input$menu)
-
+      
       menuSelecionado(input$menu)
-
+      
     },
-
+    
     ignoreInit = TRUE
-
+    
   )
-
+  
   # ===================================================
   # TELA DE LOGIN
   # ===================================================
-
+  
   output$tela_login <- renderUI({
-
+    
     if (autenticado()) {
       return(NULL)
     }
-
+    
     div(
-
-      class = "login",
-
+      class = "login-wrapper",
+      
       div(
-        class = "logo",
-        "RadarSocial"
-      ),
-
-      textInput("usuario", "Usuário"),
-
-      passwordInput("senha", "Senha"),
-
-      div(
-        id = "capslock_warning",
-        icon("triangle-exclamation"),
-        " Caps Lock está ativado"
-      ),
-
-      br(),
-
-      actionButton(
-        "entrar",
-        "Entrar",
-        class = "btn btn-primary w-100"
+        class = "login-card shadow-sm p-4",
+        
+        div(
+          class = "logo-container mb-4",
+          
+          tags$img(
+            src = "img/radarSocial_logo_horizontal_fundo_claro.png",
+            class = "logo-login",
+            alt = "RadarSocial"
+          )
+        ),
+        
+        div(
+          class = "login-icon-badge mb-3",
+          icon("shield-halved")
+        ),
+        
+        tags$h4(
+          "Acesso ao sistema",
+          class = "login-title fw-bold mb-1"
+        ),
+        
+        tags$p(
+          "Escolha como deseja entrar no RadarSocial",
+          class = "login-subtitle text-muted mb-4"
+        ),
+        
+        if (is.null(metodoAcesso())) {
+          
+          # =============================================
+          # PASSO 1 - SELETOR DE MÉTODO
+          # =============================================
+          
+          tagList(
+            
+            div(
+              class = "metodo-opcoes",
+              
+              radioButtons(
+                "metodo_acesso",
+                NULL,
+                choiceNames = list(
+                  
+                  tagList(
+                    icon("building-shield", class = "metodo-opcao-icone"),
+                    div(
+                      div("Login Corporativo (AD)", class = "metodo-opcao-titulo"),
+                      div("Entrar com seu usuário e senha de domínio", class = "metodo-opcao-desc")
+                    )
+                  ),
+                  
+                  tagList(
+                    icon("mobile-screen-button", class = "metodo-opcao-icone"),
+                    div(
+                      div("Código Authenticator", class = "metodo-opcao-titulo"),
+                      div("Entrar com um código gerado no seu celular", class = "metodo-opcao-desc")
+                    )
+                  )
+                  
+                ),
+                choiceValues = list("ad", "totp"),
+                selected = character(0)
+              )
+              
+            ),
+            
+            actionButton(
+              "continuar",
+              tagList("Continuar", icon("arrow-right", class = "ms-2")),
+              class = "btn btn-primary w-100 btn-acesso mt-2"
+            )
+            
+          )
+          
+        } else if (metodoAcesso() == "ad") {
+          
+          # =============================================
+          # PASSO 2A - LOGIN CORPORATIVO (AD)
+          # =============================================
+          
+          tagList(
+            
+            actionLink(
+              "voltar_metodo",
+              tagList(icon("arrow-left"), " Voltar"),
+              class = "voltar-link mb-4 d-inline-block"
+            ),
+            
+            div(
+              class = "mb-3",
+              textInput("usuario", "Usuário", width = "100%")
+            ),
+            
+            div(
+              class = "mb-2",
+              passwordInput("senha", "Senha", width = "100%")
+            ),
+            
+            div(
+              id = "capslock_warning",
+              icon("triangle-exclamation"),
+              " Caps Lock está ativado"
+            ),
+            
+            actionButton(
+              "entrar",
+              tagList(icon("right-to-bracket", class = "me-2"), "Entrar"),
+              class = "btn btn-primary w-100 btn-acesso mt-4"
+            )
+            
+          )
+          
+        } else if (metodoAcesso() == "totp") {
+          
+          # =============================================
+          # PASSO 2B - CÓDIGO AUTHENTICATOR (TOTP)
+          # =============================================
+          
+          tagList(
+            
+            actionLink(
+              "voltar_metodo",
+              tagList(icon("arrow-left"), " Voltar"),
+              class = "voltar-link mb-4 d-inline-block"
+            ),
+            
+            div(
+              class = "mb-3",
+              textInput("usuario_totp", "Usuário", width = "100%")
+            ),
+            
+            div(
+              class = "mb-2",
+              textInput(
+                "codigo_totp",
+                "Código do Authenticator",
+                placeholder = "000000",
+                width = "100%"
+              )
+            ),
+            
+            actionButton(
+              "entrar_totp",
+              tagList(icon("key", class = "me-2"), "Entrar"),
+              class = "btn btn-primary w-100 btn-acesso mt-4"
+            )
+            
+          )
+          
+        }
+        
       )
-
+      
     )
-
   })
-
+  
   # ===================================================
   # TELA PRINCIPAL
   # ===================================================
-  # OBS: usamos isolate() em menuSelecionado() aqui porque este bloco
-  # só deve rodar quando `autenticado()` muda (login/logout).
-  # Se a aba selecionada (input$menu) disparasse este renderUI, toda a
-  # navset_tab -- e os módulos dentro dela -- seriam recriados a cada
-  # troca de aba, perdendo o estado interno dos módulos (o mesmo bug
-  # de combos que não populavam, já visto em outros módulos).
-  # A troca de aba em si é sincronizada via updateTabsetPanel() acima.
-  # ===================================================
-
+  
   output$tela_principal <- renderUI({
-
+    
     req(autenticado())
-
+    
     tagList(
-
+      
       # =================================================
       # BARRA DE ÍCONES
       # =================================================
-
+      
       div(
-
+        
         class = "icon-bar",
-
+        
         actionLink(
           "toggle_header",
           icon("id-badge"),
           class = "icon-btn",
           title = "Mostrar/ocultar informações do usuário"
         ),
-
+        
         actionLink(
           "sair",
           icon("power-off"),
           class = "icon-btn sair",
           title = "Sair"
         )
-
+        
       ),
-
+      
       # =================================================
       # CONTEÚDO
       # =================================================
-
+      
       div(
-
+        
         id = "app-content",
-
+        
         # ===============================================
         # CABEÇALHO
         # ===============================================
-
+        
         div(
-
+          
           class = "header-container",
-
+          
           h2("Radar Social"),
-
-          tags$div(
-
-            style = "color:#555;",
-
-            tags$b("Usuário: "),
-            obter_campo(dadosUsuario(), "displayName"),
-            br(),
-
-            tags$b("Departamento: "),
-            obter_campo(dadosUsuario(), "department"),
-            br(),
-
-            tags$b("Criado em: "),
-            formatar_whenCreated(
-              obter_campo(dadosUsuario(), "whenCreated")
-            ),
-            br(),
-
-            tags$b("Último acesso: "),
-            formatar_lastLogon(
-              obter_campo(dadosUsuario(), "lastLogonTimestamp")
-            ),
-            br(),
-
-            tags$b("Gestor: "),
-            extrair_manager(dadosUsuario()$manager)
-
-          )
-
+          
+          if (identical(metodoAutenticado(), "AD")) {
+            
+            tags$div(
+              
+              style = "color:#555;",
+              
+              tags$b("Usuário: "),
+              obter_campo(dadosUsuario(), "displayName"),
+              br(),
+              
+              tags$b("Departamento: "),
+              obter_campo(dadosUsuario(), "department"),
+              br(),
+              
+              tags$b("Criado em: "),
+              formatar_whenCreated(
+                obter_campo(dadosUsuario(), "whenCreated")
+              ),
+              br(),
+              
+              tags$b("Último acesso: "),
+              formatar_lastLogon(
+                obter_campo(dadosUsuario(), "lastLogonTimestamp")
+              ),
+              br(),
+              
+              tags$b("Gestor: "),
+              extrair_manager(dadosUsuario()$manager),
+              br(),
+              
+              tags$b("Método de acesso: "),
+              "Login Corporativo (AD)"
+              
+            )
+            
+          } else {
+            
+            tags$div(
+              
+              style = "color:#555;",
+              
+              tags$b("Usuário: "),
+              dadosUsuario()$displayName,
+              br(),
+              
+              tags$b("Login: "),
+              dadosUsuario()$login,
+              br(),
+              
+              tags$b("Método de acesso: "),
+              "Código Authenticator (TOTP)"
+              
+            )
+            
+          }
+          
         ),
-
+        
         hr(),
-
+        
         # ===============================================
         # ABAS
         # ===============================================
-
-        navset_tab(
-
-          id = "menu",
-
-          selected = isolate(menuSelecionado()),
-
-          # nav_panel("Usuário", mod_usuario_ui("usuario")),
-          # nav_panel("Alertas", mod_alertas_ui("alertas")),
-          nav_panel("Ocorrências", mod_ocorrencias_ui("ocorrencias")),
-          nav_panel("Rejeitados", mod_rejeitados_ui("rejeitados")),
-          nav_panel("Totalizadores", mod_totalizadores_ui("totalizadores"))#,
-          # nav_panel("Consulta SQL", mod_consulta_sql_ui("sql")),
-          # nav_panel("Declaração", mod_declaracao_ui("declaracao"))
-
+        
+        do.call(
+          navset_tab,
+          c(
+            list(
+              id = "menu",
+              selected = isolate(menuSelecionado())
+            ),
+            list(
+              nav_panel("Ocorrências", mod_ocorrencias_ui("ocorrencias")),
+              nav_panel("Rejeitados", mod_rejeitados_ui("rejeitados")),
+              nav_panel("Totalizadores", mod_totalizadores_ui("totalizadores"))
+            ),
+            if (identical(metodoAutenticado(), "AD")) {
+              list(
+                nav_panel("Administração TOTP", mod_totp_admin_ui("totp_admin"))
+              )
+            }
+          )
         )
-
+        
       )
-
+      
     )
-
+    
   })
-
+  
   # ===================================================
   # SERVIDORES DOS MÓDULOS
   # ===================================================
-
+  
   mod_usuario_server(
     "usuario",
     dados_usuario = dadosUsuario,
     foto_usuario = fotoUsuario
   )
-
+  
   mod_rejeitados_server(
     "rejeitados",
     ativo = reactive(menuSelecionado() == "Rejeitados")
   )
-
+  
   mod_ocorrencias_server(
     "ocorrencias",
     ativo = reactive(menuSelecionado() == "Ocorrências")
   )
-
+  
   mod_totalizadores_server(
     "totalizadores",
     ativo = reactive(menuSelecionado() == "Totalizadores")
   )
-
-  # mod_consulta_sql_server("sql")
-
-  # mod_declaracao_server("declaracao")
-
-  # mod_alertas_server(
-  #   "alertas",
-  #   ativo = reactive(menuSelecionado() == "Alertas")
-  # )
-
+  
+  # Cadastro TOTP fica disponível apenas para quem entrou via AD
+  # (a UI da aba só é renderizada nesse caso, mas o módulo em si
+  # não depende disso para funcionar caso a regra mude no futuro).
+  mod_totp_admin_server(
+    "totp_admin",
+    con = con,
+    ativo = reactive(menuSelecionado() == "Administração TOTP")
+  )
+  
 }
 
 # =====================================================
