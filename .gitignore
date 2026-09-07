@@ -39,8 +39,8 @@ vignettes/*.pdf
 # R Environment Variables
 .Renviron
 
-# CSV Files
-*.csv
+# PDF Files
+*.pdf
 
 # pkgdown site
 docs/

@@ -2,6 +2,17 @@
 # APP.R
 # =====================================================
 
+# Corrige o diretório de trabalho caso o projeto não
+# tenha sido aberto pelo .Rproj
+if (requireNamespace("rstudioapi", quietly = TRUE) && rstudioapi::isAvailable()) {
+    try(setwd(dirname(rstudioapi::getSourceEditorContext()$path)), silent = TRUE)
+}
+
+library(here)
+here::i_am("app.R")
+
+readRenviron(here::here(".Renviron"))
+
 library(shiny)
 library(bslib)
 library(DT)
@@ -11,20 +22,24 @@ library(digest)
 library(DBI)
 library(RSQLite)
 
+library(reticulate)
+
+python_path <- Sys.getenv("RETICULATE_PYTHON", unset = Sys.which("python"))
+if (!nzchar(python_path) || !file.exists(python_path)) {
+    stop(
+        "Python não encontrado em '", python_path, "'. ",
+        "Verifique a instalação do Python ou defina RETICULATE_PYTHON no .Renviron ",
+        "apontando para o python.exe correto."
+    )
+}
+use_python(python_path, required = TRUE)
+
 # =====================================================
 # CARREGA CONEXAO DB PARA LOGIN COM AUTH
 # =====================================================
 con <- dbConnect(
   SQLite(),
   "data/radarsocial.db"
-)
-
-# =====================================================
-# CARREGA VARIÁVEIS DE AMBIENTE
-# =====================================================
-
-readRenviron(
-  "C:/Users/3894/OneDrive - Tribunal de Justiça do Estado de Sergipe/Documentos/GitHub/radarsocial/conf/.Renviron"
 )
 
 # =====================================================
@@ -38,7 +53,7 @@ source("R/database.R")
 
 source("modules/mod_usuario.R")
 source("modules/mod_rejeitados.R")
-source("modules/mod_ocorrencias.R")
+source("modules/mod_inconsistencias.R")
 source("modules/mod_totalizadores.R")
 source("modules/mod_totp_admin.R")
 
@@ -973,7 +988,7 @@ server <- function(input, output, session) {
               selected = isolate(menuSelecionado())
             ),
             list(
-              nav_panel("Ocorrências", mod_ocorrencias_ui("ocorrencias")),
+              nav_panel("Inconsistências", mod_inconsistencias_ui("inconsistencias")),
               nav_panel("Rejeitados", mod_rejeitados_ui("rejeitados")),
               nav_panel("Totalizadores", mod_totalizadores_ui("totalizadores"))
             ),
@@ -1006,9 +1021,9 @@ server <- function(input, output, session) {
     ativo = reactive(menuSelecionado() == "Rejeitados")
   )
   
-  mod_ocorrencias_server(
-    "ocorrencias",
-    ativo = reactive(menuSelecionado() == "Ocorrências")
+  mod_inconsistencias_server(
+      "inconsistencias",
+      ativo = reactive(menuSelecionado() == "Inconsistências")
   )
   
   mod_totalizadores_server(

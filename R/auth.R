@@ -9,62 +9,24 @@ library(jsonlite)
 # PYTHON
 # =====================================================
 
-use_python(
-  "C://Program Files//Python314//python.exe",
-  required = TRUE
-)
+python_path <- Sys.getenv("RETICULATE_PYTHON", unset = Sys.which("python"))
+if (!nzchar(python_path) || !file.exists(python_path)) {
+    stop(
+        "Python não encontrado em '", python_path, "'. ",
+        "Verifique a instalação do Python ou defina RETICULATE_PYTHON no .Renviron ",
+        "apontando para o python.exe correto."
+    )
+}
+use_python(python_path, required = TRUE)
 
 ldap3 <- import("ldap3")
-
-# # =====================================================
-# # CONFIGURAÇÕES LDAP
-# # =====================================================
-# 
-# LDAP_SERVER <- Sys.getenv(
-#   "LDAP_SERVER"
-# )
-# 
-# LDAP_PORT <- as.integer(
-#   Sys.getenv("LDAP_PORT")
-# )
-# 
-# LDAP_DOMAIN <- Sys.getenv(
-#   "LDAP_DOMAIN"
-# )
-# 
-# SEARCH_BASE <- Sys.getenv(
-#   "LDAP_SEARCH_BASE"
-# )
-# 
-# # =====================================================
-# # VALIDA CONFIGURAÇÃO
-# # =====================================================
-# 
-# validar_config_ldap <- function(){
-# 
-#   campos <- c(
-#     LDAP_SERVER,
-#     LDAP_PORT,
-#     LDAP_DOMAIN,
-#     SEARCH_BASE
-#   )
-# 
-#   all(
-#     !is.na(campos) &
-#       campos != ""
-#   )
-# 
-# }
 
 # =====================================================
 # CONFIGURAÇÕES LDAP E VALIDAÇÃO DINÂMICA
 # =====================================================
 
 validar_config_ldap <- function(){
-  # Força a leitura do arquivo novamente para garantir que o Shiny localizou
-  try(readRenviron("C:/Users/3894/Projetos Py/R2/conf/.Renviron"), silent = TRUE)
-  
-  # Atualiza as variáveis globais em tempo de execução
+
   LDAP_SERVER <<- Sys.getenv("LDAP_SERVER")
   LDAP_PORT   <<- as.integer(Sys.getenv("LDAP_PORT"))
   LDAP_DOMAIN <<- Sys.getenv("LDAP_DOMAIN")
