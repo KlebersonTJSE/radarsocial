@@ -1,9 +1,14 @@
-# =====================================================
-# APP.R
-# =====================================================
-
+# =========================================================================
+# app.R — Declaraserv | Geração de Certidão MPRO (Formato HTML)
+# -------------------------------------------------------------------------
+# Login corporativo (Active Directory) ou código Authenticator (TOTP),
+# seguindo o mesmo layout/fluxo de autenticação usado em outros sistemas
+# internos, adaptado para a aplicação Declaraserv.
+#
 # Corrige o diretório de trabalho caso o projeto não
 # tenha sido aberto pelo .Rproj
+# =========================================================================
+
 if (requireNamespace("rstudioapi", quietly = TRUE) && rstudioapi::isAvailable()) {
     try(setwd(dirname(rstudioapi::getSourceEditorContext()$path)), silent = TRUE)
 }
@@ -42,20 +47,19 @@ con <- dbConnect(
   "data/radarsocial.db"
 )
 
-# =====================================================
-# SOURCES
-# =====================================================
+# =========================================================================
+# MÓDULOS DE AUTENTICAÇÃO, BANCO E UTILITÁRIOS
+# =========================================================================
+source(here::here("R", "utils.R"))
+source(here::here("R", "auth.R"))
+source(here::here("R", "auth_totp.R"))
+source(here::here("R", "database.R"))
+source(here::here("modules", "mod_totp_admin.R"))
+source(here::here("modules", "mod_usuario.R"))
 
-source("R/utils.R")
-source("R/auth.R")
-source("R/auth_totp.R")
-source("R/database.R")
-
-source("modules/mod_usuario.R")
-source("modules/mod_rejeitados.R")
-source("modules/mod_inconsistencias.R")
-source("modules/mod_totalizadores.R")
-source("modules/mod_totp_admin.R")
+source(here::here("modules", "mod_rejeitados.R"))
+source(here::here("modules", "mod_inconsistencias.R"))
+source(here::here("modules", "mod_totalizadores.R"))
 
 # =====================================================
 # RECURSOS ESTÁTICOS
