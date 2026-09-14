@@ -531,6 +531,13 @@ server <- function(input, output, session) {
     
     menuSelecionado <- reactiveVal("Usuário")
     
+    # Incrementado a cada logout — sinaliza para mod_totp_admin_server()
+    # limpar seu estado interno (chave recém-gerada, campos do formulário),
+    # já que o módulo é iniciado uma única vez por sessão do navegador e,
+    # sem isso, essas informações ficariam visíveis para quem fizer login
+    # em seguida na mesma aba/sessão.
+    resetarAdminTotp <- reactiveVal(0)
+    
     # ===================================================
     # SELEÇÃO DO MÉTODO DE ACESSO
     # ===================================================
@@ -785,6 +792,9 @@ server <- function(input, output, session) {
             metodoAcesso(NULL)
             distroSelecionado(NULL)
             menuSelecionado("Usuário")
+            
+            # Ver comentário na definição de resetarAdminTotp acima.
+            resetarAdminTotp(resetarAdminTotp() + 1)
             
         },
         
@@ -1251,7 +1261,8 @@ server <- function(input, output, session) {
     mod_totp_admin_server(
         "totp_admin",
         con = con,
-        ativo = reactive(menuSelecionado() == "Administração TOTP")
+        ativo = reactive(menuSelecionado() == "Administração TOTP"),
+        resetar = resetarAdminTotp
     )
     
 }

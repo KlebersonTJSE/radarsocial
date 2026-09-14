@@ -227,6 +227,60 @@ registrar_auditoria <- function(con, login, metodo, sucesso) {
 }
 
 # -----------------------------------------------------
+# INTERVALO DE DATAS DA AUDITORIA
+# Menor e maior data já registradas em login_auditoria — usado para
+# dimensionar o slider de período na aba "Auditoria - Gráfico" (ver
+# modules/mod_totp_admin.R).
+# -----------------------------------------------------
+
+obter_intervalo_auditoria <- function(con) {
+    
+    DBI::dbGetQuery(
+        con,
+        "SELECT MIN(date(datahora)) AS minimo, MAX(date(datahora)) AS maximo FROM login_auditoria"
+    )
+    
+}
+
+# -----------------------------------------------------
+# LISTAGEM DE AUDITORIA (com empresa derivada)
+# -----------------------------------------------------
+# A tabela login_auditoria não tem uma coluna "empresa" própria — o
+# login AD grava o método como "AD:<empresa>" (ver observeEvent(input$entrar)
+# em app.R), então a empresa é extraída dali. Para login TOTP (método
+# apenas "TOTP", sem empresa embutida), a empresa é obtida via LEFT JOIN
+# com usuarios_totp pela coluna "distro" do cadastro atual daquele login.
+# -----------------------------------------------------
+
+listar_auditoria_login <- function(con, data_inicio, data_fim) {
+    
+    DBI::dbGetQuery(
+        con,
+        "
+    SELECT
+      a.id        AS id,
+      a.login     AS login,
+      CASE
+        WHEN a.metodo LIKE 'AD:%' THEN substr(a.metodo, 4)
+        ELSE COALESCE(u.distro, '')
+      END         AS empresa,
+      a.metodo    AS metodo,
+      a.sucesso   AS sucesso,
+      a.datahora  AS datahora
+    FROM login_auditoria a
+    LEFT JOIN usuarios_totp u ON u.login = a.login
+    WHERE date(a.datahora) BETWEEN ? AND ?
+    ORDER BY a.datahora DESC
+    ",
+        params = list(
+            as.character(data_inicio),
+            as.character(data_fim)
+        )
+    )
+    
+}
+
+# -----------------------------------------------------
 # ESQUEMA MULTI-EMPRESA (coluna "distro")
 # -----------------------------------------------------
 # Instalações que já rodaram uma versão anterior deste app (antes do
