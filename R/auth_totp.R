@@ -15,37 +15,37 @@ library(digest)
 .base32_alphabet <- strsplit("ABCDEFGHIJKLMNOPQRSTUVWXYZ234567", "")[[1]]
 
 base32_decode <- function(secret) {
-  
-  secret <- toupper(gsub("[^A-Za-z2-7]", "", secret))
-  
-  if (nchar(secret) == 0) {
-    stop("Chave secreta TOTP vazia ou inválida")
-  }
-  
-  chars <- strsplit(secret, "")[[1]]
-  
-  bitstring <- paste(
-    vapply(chars, function(ch) {
-      idx <- match(ch, .base32_alphabet) - 1
-      if (is.na(idx)) stop("Caractere inválido na chave secreta TOTP")
-      paste(rev(as.integer(intToBits(idx))[1:5]), collapse = "")
-    }, character(1)),
-    collapse = ""
-  )
-  
-  n_bytes <- floor(nchar(bitstring) / 8)
-  
-  if (n_bytes == 0) {
-    stop("Chave secreta TOTP inválida (muito curta)")
-  }
-  
-  bytes <- vapply(seq_len(n_bytes), function(i) {
-    byte_bits <- substr(bitstring, (i - 1) * 8 + 1, i * 8)
-    strtoi(byte_bits, base = 2)
-  }, integer(1))
-  
-  as.raw(bytes)
-  
+    
+    secret <- toupper(gsub("[^A-Za-z2-7]", "", secret))
+    
+    if (nchar(secret) == 0) {
+        stop("Chave secreta TOTP vazia ou inválida")
+    }
+    
+    chars <- strsplit(secret, "")[[1]]
+    
+    bitstring <- paste(
+        vapply(chars, function(ch) {
+            idx <- match(ch, .base32_alphabet) - 1
+            if (is.na(idx)) stop("Caractere inválido na chave secreta TOTP")
+            paste(rev(as.integer(intToBits(idx))[1:5]), collapse = "")
+        }, character(1)),
+        collapse = ""
+    )
+    
+    n_bytes <- floor(nchar(bitstring) / 8)
+    
+    if (n_bytes == 0) {
+        stop("Chave secreta TOTP inválida (muito curta)")
+    }
+    
+    bytes <- vapply(seq_len(n_bytes), function(i) {
+        byte_bits <- substr(bitstring, (i - 1) * 8 + 1, i * 8)
+        strtoi(byte_bits, base = 2)
+    }, integer(1))
+    
+    as.raw(bytes)
+    
 }
 
 # -----------------------------------------------------
@@ -53,12 +53,12 @@ base32_decode <- function(secret) {
 # -----------------------------------------------------
 
 gerar_totp_secret <- function(tamanho = 32) {
-  
-  paste(
-    sample(.base32_alphabet, tamanho, replace = TRUE),
-    collapse = ""
-  )
-  
+    
+    paste(
+        sample(.base32_alphabet, tamanho, replace = TRUE),
+        collapse = ""
+    )
+    
 }
 
 # -----------------------------------------------------
@@ -67,16 +67,16 @@ gerar_totp_secret <- function(tamanho = 32) {
 # -----------------------------------------------------
 
 .contador_para_bytes <- function(contador) {
-  
-  bytes <- integer(8)
-  
-  for (i in 8:1) {
-    bytes[i] <- contador %% 256
-    contador <- contador %/% 256
-  }
-  
-  as.raw(bytes)
-  
+    
+    bytes <- integer(8)
+    
+    for (i in 8:1) {
+        bytes[i] <- contador %% 256
+        contador <- contador %/% 256
+    }
+    
+    as.raw(bytes)
+    
 }
 
 # -----------------------------------------------------
@@ -84,31 +84,31 @@ gerar_totp_secret <- function(tamanho = 32) {
 # -----------------------------------------------------
 
 hotp_gerar <- function(secret_base32, contador, digitos = 6) {
-  
-  chave <- base32_decode(secret_base32)
-  msg   <- .contador_para_bytes(contador)
-  
-  hash <- digest::hmac(
-    key       = chave,
-    object    = msg,
-    algo      = "sha1",
-    serialize = FALSE,
-    raw       = TRUE
-  )
-  
-  offset <- (as.integer(hash[length(hash)])) %% 16
-  
-  b <- as.integer(hash[(offset + 1):(offset + 4)])
-  
-  valor <- bitwAnd(b[1], 0x7f) * 2^24 +
-    b[2] * 2^16 +
-    b[3] * 2^8 +
-    b[4]
-  
-  codigo <- valor %% (10^digitos)
-  
-  formatC(codigo, width = digitos, format = "d", flag = "0")
-  
+    
+    chave <- base32_decode(secret_base32)
+    msg   <- .contador_para_bytes(contador)
+    
+    hash <- digest::hmac(
+        key       = chave,
+        object    = msg,
+        algo      = "sha1",
+        serialize = FALSE,
+        raw       = TRUE
+    )
+    
+    offset <- (as.integer(hash[length(hash)])) %% 16
+    
+    b <- as.integer(hash[(offset + 1):(offset + 4)])
+    
+    valor <- bitwAnd(b[1], 0x7f) * 2^24 +
+        b[2] * 2^16 +
+        b[3] * 2^8 +
+        b[4]
+    
+    codigo <- valor %% (10^digitos)
+    
+    formatC(codigo, width = digitos, format = "d", flag = "0")
+    
 }
 
 # -----------------------------------------------------
@@ -116,40 +116,40 @@ hotp_gerar <- function(secret_base32, contador, digitos = 6) {
 # -----------------------------------------------------
 
 totp_gerar <- function(secret_base32, tempo = Sys.time(), passo = 30, digitos = 6) {
-  
-  contador <- floor(as.numeric(tempo) / passo)
-  hotp_gerar(secret_base32, contador, digitos)
-  
+    
+    contador <- floor(as.numeric(tempo) / passo)
+    hotp_gerar(secret_base32, contador, digitos)
+    
 }
 
 # Verifica com tolerância de +/- 1 passo (30s) para lidar com
 # pequenas diferenças de relógio entre servidor e celular.
 totp_verificar <- function(secret_base32, codigo, tempo = Sys.time(),
                            passo = 30, digitos = 6, janela = 1) {
-  
-  codigo <- trimws(as.character(codigo))
-  
-  if (!grepl(paste0("^[0-9]{", digitos, "}$"), codigo)) {
-    return(FALSE)
-  }
-  
-  contador_atual <- floor(as.numeric(tempo) / passo)
-  
-  for (desvio in -janela:janela) {
     
-    esperado <- tryCatch(
-      hotp_gerar(secret_base32, contador_atual + desvio, digitos),
-      error = function(e) NA_character_
-    )
+    codigo <- trimws(as.character(codigo))
     
-    if (!is.na(esperado) && identical(esperado, codigo)) {
-      return(TRUE)
+    if (!grepl(paste0("^[0-9]{", digitos, "}$"), codigo)) {
+        return(FALSE)
     }
     
-  }
-  
-  FALSE
-  
+    contador_atual <- floor(as.numeric(tempo) / passo)
+    
+    for (desvio in -janela:janela) {
+        
+        esperado <- tryCatch(
+            hotp_gerar(secret_base32, contador_atual + desvio, digitos),
+            error = function(e) NA_character_
+        )
+        
+        if (!is.na(esperado) && identical(esperado, codigo)) {
+            return(TRUE)
+        }
+        
+    }
+    
+    FALSE
+    
 }
 
 # -----------------------------------------------------
@@ -158,15 +158,15 @@ totp_verificar <- function(secret_base32, codigo, tempo = Sys.time(),
 # -----------------------------------------------------
 
 totp_provisioning_uri <- function(login, secret_base32, emissor = "RadarSocial") {
-  
-  paste0(
-    "otpauth://totp/",
-    utils::URLencode(paste0(emissor, ":", login), reserved = TRUE),
-    "?secret=", secret_base32,
-    "&issuer=", utils::URLencode(emissor, reserved = TRUE),
-    "&algorithm=SHA1&digits=6&period=30"
-  )
-  
+    
+    paste0(
+        "otpauth://totp/",
+        utils::URLencode(paste0(emissor, ":", login), reserved = TRUE),
+        "?secret=", secret_base32,
+        "&issuer=", utils::URLencode(emissor, reserved = TRUE),
+        "&algorithm=SHA1&digits=6&period=30"
+    )
+    
 }
 
 # -----------------------------------------------------
@@ -176,25 +176,25 @@ totp_provisioning_uri <- function(login, secret_base32, emissor = "RadarSocial")
 # -----------------------------------------------------
 
 gerar_qrcode_base64 <- function(texto) {
-  
-  if (!requireNamespace("qrcode", quietly = TRUE)) {
-    return(NULL)
-  }
-  
-  qr <- qrcode::qr_code(texto)
-  
-  arquivo_tmp <- tempfile(fileext = ".png")
-  
-  grDevices::png(arquivo_tmp, width = 260, height = 260, bg = "white")
-  graphics::par(mar = c(0, 0, 0, 0))
-  plot(qr)
-  grDevices::dev.off()
-  
-  bytes <- readBin(arquivo_tmp, "raw", file.info(arquivo_tmp)$size)
-  unlink(arquivo_tmp)
-  
-  paste0("data:image/png;base64,", jsonlite::base64_enc(bytes))
-  
+    
+    if (!requireNamespace("qrcode", quietly = TRUE)) {
+        return(NULL)
+    }
+    
+    qr <- qrcode::qr_code(texto)
+    
+    arquivo_tmp <- tempfile(fileext = ".png")
+    
+    grDevices::png(arquivo_tmp, width = 260, height = 260, bg = "white")
+    graphics::par(mar = c(0, 0, 0, 0))
+    plot(qr)
+    grDevices::dev.off()
+    
+    bytes <- readBin(arquivo_tmp, "raw", file.info(arquivo_tmp)$size)
+    unlink(arquivo_tmp)
+    
+    paste0("data:image/png;base64,", jsonlite::base64_enc(bytes))
+    
 }
 
 # =====================================================
@@ -206,134 +206,164 @@ gerar_qrcode_base64 <- function(texto) {
 # -----------------------------------------------------
 
 registrar_auditoria <- function(con, login, metodo, sucesso) {
-  
-  tryCatch({
     
-    DBI::dbExecute(
-      con,
-      "INSERT INTO login_auditoria (login, metodo, sucesso, datahora) VALUES (?, ?, ?, ?)",
-      params = list(
-        login,
-        metodo,
-        as.integer(sucesso),
-        format(Sys.time(), "%Y-%m-%d %H:%M:%S")
-      )
-    )
+    tryCatch({
+        
+        DBI::dbExecute(
+            con,
+            "INSERT INTO login_auditoria (login, metodo, sucesso, datahora) VALUES (?, ?, ?, ?)",
+            params = list(
+                login,
+                metodo,
+                as.integer(sucesso),
+                format(Sys.time(), "%Y-%m-%d %H:%M:%S")
+            )
+        )
+        
+    }, error = function(e) {
+        warning(paste("Falha ao gravar auditoria de login:", e$message))
+    })
     
-  }, error = function(e) {
-    warning(paste("Falha ao gravar auditoria de login:", e$message))
-  })
-  
+}
+
+# -----------------------------------------------------
+# ESQUEMA MULTI-EMPRESA (coluna "distro")
+# -----------------------------------------------------
+# Instalações que já rodaram uma versão anterior deste app (antes do
+# suporte multi-empresa) têm a tabela usuarios_totp sem a coluna
+# "distro" — CREATE TABLE IF NOT EXISTS não adiciona colunas a uma
+# tabela já existente, então isso é feito à parte. Chame esta função
+# uma vez, logo após abrir a conexão SQLite (ver app.R).
+garantir_schema_totp <- function(con) {
+    
+    colunas_totp <- DBI::dbListFields(con, "usuarios_totp")
+    
+    if (!("distro" %in% colunas_totp)) {
+        DBI::dbExecute(con, "ALTER TABLE usuarios_totp ADD COLUMN distro TEXT")
+    }
+    
 }
 
 # -----------------------------------------------------
 # AUTENTICAÇÃO TOTP (login + código de 6 dígitos)
-# Retorna lista com dados do usuário em caso de sucesso,
-# ou NULL em caso de falha. Sempre grava auditoria.
+# Retorna lista com dados do usuário (incluindo a empresa/"distro"
+# associada ao cadastro) em caso de sucesso, ou NULL em caso de falha.
+# Sempre grava auditoria.
 # -----------------------------------------------------
 
 autenticar_totp <- function(con, login, codigo) {
-  
-  login <- trimws(login)
-  
-  registro <- DBI::dbGetQuery(
-    con,
-    "SELECT login, nome, secret_key, ativo FROM usuarios_totp WHERE login = ? AND ativo = 1",
-    params = list(login)
-  )
-  
-  sucesso <- FALSE
-  dados   <- NULL
-  
-  if (nrow(registro) == 1) {
     
-    valido <- tryCatch(
-      totp_verificar(registro$secret_key[1], codigo),
-      error = function(e) FALSE
+    login <- trimws(login)
+    
+    registro <- DBI::dbGetQuery(
+        con,
+        "SELECT login, nome, secret_key, distro, ativo FROM usuarios_totp WHERE login = ? AND ativo = 1",
+        params = list(login)
     )
     
-    if (valido) {
-      
-      sucesso <- TRUE
-      
-      dados <- list(
-        login       = registro$login[1],
-        displayName = registro$nome[1]
-      )
-      
+    sucesso <- FALSE
+    dados   <- NULL
+    
+    if (nrow(registro) == 1) {
+        
+        valido <- tryCatch(
+            totp_verificar(registro$secret_key[1], codigo),
+            error = function(e) FALSE
+        )
+        
+        if (valido) {
+            
+            sucesso <- TRUE
+            
+            dados <- list(
+                login       = registro$login[1],
+                displayName = registro$nome[1],
+                distro      = registro$distro[1]
+            )
+            
+        }
+        
     }
     
-  }
-  
-  registrar_auditoria(con, login, "TOTP", sucesso)
-  
-  dados
-  
+    registrar_auditoria(con, login, "TOTP", sucesso)
+    
+    dados
+    
 }
 
 # -----------------------------------------------------
 # CADASTRO / RECADASTRO DE USUÁRIO TOTP
-# Gera uma nova chave secreta e grava/atualiza no banco.
+# Gera uma nova chave secreta e grava/atualiza no banco, associando o
+# usuário a uma empresa (distro). A empresa é sempre gravada em
+# MAIÚSCULAS — ver nota de normalização em distro_env() (R/utils.R) e
+# authenticate_ad() (R/auth.R): login AD e login TOTP da mesma empresa
+# precisam resolver para o mesmo conjunto de variáveis/subpastas.
 # -----------------------------------------------------
 
-cadastrar_usuario_totp <- function(con, login, nome) {
-  
-  login <- trimws(login)
-  nome  <- trimws(nome)
-  
-  if (login == "" || nome == "") {
-    stop("Login e nome são obrigatórios")
-  }
-  
-  secret <- gerar_totp_secret()
-  
-  existe <- DBI::dbGetQuery(
-    con,
-    "SELECT login FROM usuarios_totp WHERE login = ?",
-    params = list(login)
-  )
-  
-  if (nrow(existe) > 0) {
+cadastrar_usuario_totp <- function(con, login, nome, distro) {
     
-    DBI::dbExecute(
-      con,
-      "UPDATE usuarios_totp SET nome = ?, secret_key = ?, ativo = 1 WHERE login = ?",
-      params = list(nome, secret, login)
+    login  <- trimws(login)
+    nome   <- trimws(nome)
+    distro <- toupper(trimws(distro))
+    
+    if (login == "" || nome == "") {
+        stop("Login e nome são obrigatórios")
+    }
+    
+    if (distro == "") {
+        stop("Empresa (distro) é obrigatória para o cadastro TOTP")
+    }
+    
+    secret <- gerar_totp_secret()
+    
+    existe <- DBI::dbGetQuery(
+        con,
+        "SELECT login FROM usuarios_totp WHERE login = ?",
+        params = list(login)
     )
     
-  } else {
+    if (nrow(existe) > 0) {
+        
+        DBI::dbExecute(
+            con,
+            "UPDATE usuarios_totp SET nome = ?, secret_key = ?, distro = ?, ativo = 1 WHERE login = ?",
+            params = list(nome, secret, distro, login)
+        )
+        
+    } else {
+        
+        DBI::dbExecute(
+            con,
+            "INSERT INTO usuarios_totp (login, nome, secret_key, distro, ativo) VALUES (?, ?, ?, ?, 1)",
+            params = list(login, nome, secret, distro)
+        )
+        
+    }
     
-    DBI::dbExecute(
-      con,
-      "INSERT INTO usuarios_totp (login, nome, secret_key, ativo) VALUES (?, ?, ?, 1)",
-      params = list(login, nome, secret)
+    list(
+        login  = login,
+        distro = distro,
+        secret = secret,
+        uri    = totp_provisioning_uri(login, secret)
     )
     
-  }
-  
-  list(
-    login  = login,
-    secret = secret,
-    uri    = totp_provisioning_uri(login, secret)
-  )
-  
 }
 
 desativar_usuario_totp <- function(con, login) {
-  
-  DBI::dbExecute(
-    con,
-    "UPDATE usuarios_totp SET ativo = 0 WHERE login = ?",
-    params = list(login)
-  )
-  
+    
+    DBI::dbExecute(
+        con,
+        "UPDATE usuarios_totp SET ativo = 0 WHERE login = ?",
+        params = list(login)
+    )
+    
 }
 
 listar_usuarios_totp <- function(con) {
-  
-  DBI::dbGetQuery(
-    con,
-    "SELECT login, nome, ativo FROM usuarios_totp ORDER BY login"
-  )
-  
+    
+    DBI::dbGetQuery(
+        con,
+        "SELECT login, nome, distro, ativo FROM usuarios_totp ORDER BY login"
+    )
+    
 }
