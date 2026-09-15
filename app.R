@@ -197,7 +197,10 @@ ui <- fluidPage(
         font-size: .9rem;
       }
 
-      /* Cartões de método de acesso (radioButtons estilizado) */
+      /* Cartões de método de acesso (radioButtons estilizado) —
+         mesma largura do botão .btn-acesso (Continuar); a altura
+         permanece livre, de acordo com o conteúdo (ícone, título e
+         descrição). */
 
       .metodo-opcoes .radio {
         margin-bottom: .85rem;
@@ -213,6 +216,7 @@ ui <- fluidPage(
         border-radius: .85rem;
         padding: 1rem 1.1rem;
         cursor: pointer;
+        box-sizing: border-box;
         transition: border-color .15s ease,
                     background-color .15s ease,
                     box-shadow .15s ease,
@@ -258,6 +262,8 @@ ui <- fluidPage(
       }
 
       .btn-acesso {
+        width: 100%;
+        box-sizing: border-box;
         height: 48px;
         font-weight: 600;
         font-size: 1rem;
@@ -913,11 +919,6 @@ server <- function(input, output, session) {
                         class = "logo-login",
                         alt = "RadarSocial"
                     )
-                ),
-                
-                div(
-                    class = "login-icon-badge mb-3",
-                    icon("shield-halved")
                 ),
                 
                 tags$h4(
