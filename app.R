@@ -1,5 +1,5 @@
 # =========================================================================
-# app.R — Declaraserv | Geração de Certidão MPRO (Formato HTML)
+# app.R — Radar Social (Formato HTML)
 # -------------------------------------------------------------------------
 # Login corporativo (Active Directory) ou código Authenticator (TOTP),
 # seguindo o mesmo layout/fluxo de autenticação usado em outros sistemas
